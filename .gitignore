@@ -1,0 +1,3 @@
+*.bak
+vendor
+kube_scheduler_extender
