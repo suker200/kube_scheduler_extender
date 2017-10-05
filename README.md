@@ -16,11 +16,14 @@
 
 # Usage:
 - Build docker image
+
 ```
 glide up --strip-vendor
 
 CGO_ENABLED=0 env GOOS=linux go build
+
 ```
+
 - Update helm chart (We using helm chart for deploying application)
 
 # Note: 
