@@ -27,4 +27,10 @@ CGO_ENABLED=0 env GOOS=linux go build
 - Update helm chart (We using helm chart for deploying application)
 
 # Note: 
+- If you are using cluster-autoscaler, enable below option, to make sure cluster-autoscaler respect your custom-scheduler request, because the cluster-autoscaler have their node check before scaling node.
+
+```
+--verify-unschedulable-pods=false
+```
+
 - we can test with minikube :) 
