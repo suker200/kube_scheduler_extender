@@ -6,6 +6,8 @@
  
 # Target:
 - kubernetes scheduler will not assign new pod to nodes which have request resource > $X % (default: CPU 60% , Mem 70%). We save 40% for application peak
+- Do not schedule pod to server with low CPU Idle
+- Do not schedule pod to server with high load
 
 # Expand:
 - We can add more filter in pod schedule with scheduler extender
