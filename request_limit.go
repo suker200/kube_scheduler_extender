@@ -36,11 +36,11 @@ func (nodeResource *NodeResource) NodeRequest(d clientset.Interface, podName, po
 	pCpuReqs := float64(nodeResource.CpuReqs.MilliValue()+N_pCpuReqs.MilliValue()) / float64(nodeResource.Allocate.Cpu().MilliValue()) * 100
 	pMemoryReqs := float64(nodeResource.MemoryReqs.Value()+N_pMemReqs.Value()) / float64(nodeResource.Allocate.Memory().Value()) * 100
 	if nodeResource.Schedule {
-		if int64(pCpuReqs) > nodeResource.Threshold["cpu"] || int64(pMemoryReqs) > nodeResource.Threshold["memory"] {
+		if int64(pCpuReqs) > nodeResource.Threshold.Cpu || int64(pMemoryReqs) > nodeResource.Threshold.Memory {
 			fmt.Println("pod " + podName + " with namespace: " + podNamespace + " wasn't scheduled to node: " + nodeResource.Name)
 			fmt.Println("Node Information - cpu: " + fmt.Sprint(pCpuReqs) + " memory: " + fmt.Sprint(pMemoryReqs))
 			nodeResource.Schedule = false
-			nodeResource.FailedMessage = "pCpuReqs > " + fmt.Sprint(nodeResource.Threshold["cpu"]) + " or pMemoryReqs > " + fmt.Sprint(nodeResource.Threshold["memory"]) + " greater than thresh hold"
+			nodeResource.FailedMessage = "pCpuReqs > " + fmt.Sprint(nodeResource.Threshold.Cpu) + " or pMemoryReqs > " + fmt.Sprint(nodeResource.Threshold.Memory) + " greater than thresh hold"
 		} else {
 			fmt.Println("pod " + podName + " with namespace: " + podNamespace + " could be scheduled to node: " + nodeResource.Name)
 			fmt.Println(nodeResource.Name + " scheduled")

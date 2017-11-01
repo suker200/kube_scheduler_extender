@@ -13,6 +13,26 @@ type NodeResource struct {
 	MemoryReqs    resource.Quantity
 	MemoryLimits  resource.Quantity
 	Allocate      k8sapi.ResourceList
+	Load          float64
 	FailedMessage string
-	Threshold     map[string]int64
+	Threshold     ThreshodInfo
+}
+
+type ThreshodInfo struct {
+	Cpu    int64
+	Memory int64
+	Load   float64
+	CpuIdle float64
+}
+
+type Resp_PrometheusMetrics struct {
+	Status string `json:"status"`
+	Data   struct {
+		Result []struct {
+			Metric struct {
+				Instance string `json:"instance"`
+			} `json:"metric"`
+			Value []interface{} `json:"value"`
+		} `json:"result"`
+	} `json:"data"`
 }
