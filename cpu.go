@@ -4,8 +4,6 @@ import (
 	"strconv"
 )
 
-
-
 func Cpu_Idle() map[string]float64 {
 	var cpu_metrics Resp_PrometheusMetrics
 	cpu_metrics = Get_PrometheusMetrics(Config["prometheus_server"] + "/api/v1/query?query=avg+by+(instance)+(irate(node_cpu%7Bmode%3D%22idle%22%7D%5B5m%5D))+*+100")
