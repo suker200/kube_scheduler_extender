@@ -2,6 +2,10 @@
 
 # Production READY
 
+# Requirement:
+
+ - k8s 1.7+
+
 # Reason:
  - We face the issue that our application always peak the resource using, so the OOM Killed happens frequently, so we will configure the Limit resource x1,5 or x2 times with request config hence the pod can peak when necessary. When the limit can higher than the node resource which make the node overload when too much pods were assigned on.
  - We want control the resource usage per node ( our rule 60% resource usage is good)
