@@ -26,9 +26,18 @@ func Loads_metric() map[string]float64 {
 	load_dict := make(map[string]float64)
 	// core_dict := make(map[string]float64)
 
-	for num, value := range load_metrics.Data.Result {
+	for _, value := range load_metrics.Data.Result {
+		
 		load, err := strconv.ParseFloat(value.Value[1].(string), 64)
-		core, err := strconv.ParseFloat(cpu_core_metrics.Data.Result[num].Value[1].(string), 64)
+		var core float64
+
+		for _, v := range cpu_core_metrics.Data.Result {
+			if v.Metric.Instance == value.Metric.Instance {
+				core, err = strconv.ParseFloat(v.Value[1].(string), 64)
+				break
+			}
+		}
+
 		name := Convert_Name(value.Metric.Instance)
 		if err != nil {
 			load_dict[name] = 0

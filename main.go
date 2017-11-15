@@ -113,7 +113,7 @@ func Scheduler(c *gin.Context) {
 							result.FailedNodes[node.ObjectMeta.Name] = "Node has cpu_idle < " + strconv.FormatFloat(Threshold_Config.CpuIdle, 'f', -1, 64)
 							continue							
 						} else {
-							fmt.Println("Allow node : " + nResource.Name + " scheduled pod with cpu_idle " + strconv.FormatFloat(CpuIdle[nResource.Name], 'f', -1, 64))							
+							fmt.Println("Allow node : " + nResource.Name + " scheduled pod with cpu_idle " + strconv.FormatFloat(cpu_dict[nResource.Name], 'f', -1, 64))							
 						}
 				}
 			}
