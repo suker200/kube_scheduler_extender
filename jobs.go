@@ -6,12 +6,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 
 func Get_PrometheusMetrics(url string) Resp_PrometheusMetrics {
 	var metrics Resp_PrometheusMetrics
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Duration(120 * time.Second),
+	}
 
 	resp, err := client.Get(url)
 

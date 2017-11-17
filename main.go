@@ -50,9 +50,7 @@ func findNodeRole(node k8sapiV1.Node) string {
 }
 
 func Scheduler(c *gin.Context) {
-	
-	
-
+	fmt.Println("We start Scheduler")
 	var args schedulerapi.ExtenderArgs
 	c.BindJSON(&args)
 
@@ -182,8 +180,8 @@ func main() {
 	s := &http.Server{
 		Addr:           ":12345",
 		Handler:        r,
-		ReadTimeout:    60 * time.Second,
-		WriteTimeout:   60 * time.Second,
+		ReadTimeout:    120 * time.Second,
+		WriteTimeout:   120 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
