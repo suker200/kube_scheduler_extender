@@ -21,6 +21,7 @@
 # Feature:
 - we use default scheduler extender docker image, so keep all default scheduler features in our custom scheduler
 - we add custom scheduler extender to our custom scheduler
+- If prometheus server is not reachable, we just check node role and request/limit resource and return the result (timeout 10s)
 
 # Usage:
 - Build docker image
@@ -41,4 +42,13 @@ CGO_ENABLED=0 env GOOS=linux go build
 --verify-unschedulable-pods=false
 ```
 
-- we can test with minikube :) 
+# Test
+- Requirement:
+	+ virtualbox
+	+ minikube
+	+ kubectl
+	+ helm
+	
+- run: cd scheduler_test && sh -x test.sh
+
+- we can test with minikube bootstrap kubeadm :) 

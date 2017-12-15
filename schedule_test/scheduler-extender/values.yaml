@@ -1,0 +1,82 @@
+prefix: k8s
+brand: kube-system
+aws_account_id: "xxx"
+
+# We disable scheduler election for testing only
+replicaCount: 1
+imageVersion: scheduler_extender
+
+scheduler_default_image: gcr.io/google_containers/kube-scheduler:v1.7.3
+scheduler_extender_image: suker200/kube_scheduler_extender
+tier: "control-plane"
+
+scheduler_name: custom-scheduler-test
+
+lock_object_namespace: custom-scheduler-lockobject-test
+
+service:
+  internalPort: 12345
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 200Mi
+  limits:
+    cpu: 100m
+    memory: 200Mi
+
+initialDelaySeconds: 72
+minReadySeconds: 5
+
+healthcheck:
+  method: tcp
+
+scheduler:
+  test_mode: "true"
+  threshold:
+    cpu: 76
+    memory: 76
+    load: 2
+    cpu_idle: 70
+  config:
+    prometheus_server: "http://prometheus-prometheus-server.devops.svc.cluster.local"
+
+ingress:
+  enabled: false
+  class: "internal-facing"
+  hosts:
+    - suker200.com
+
+scheduler_policy: |-
+    {
+    "kind" : "Policy",
+    "apiVersion" : "v1",
+    "predicates" : [
+      {"name" : "PodFitsHostPorts"},
+      {"name" : "PodFitsResources"},
+      {"name" : "NoDiskConflict"},
+      {"name" : "NoVolumeZoneConflict"},
+      {"name" : "MatchNodeSelector"},
+      {"name" : "HostName"},
+      {"name" : "MatchInterPodAffinity"}
+      ],
+    "priorities" : [
+      {"name" : "LeastRequestedPriority", "weight" : 1},
+      {"name" : "BalancedResourceAllocation", "weight" : 1},
+      {"name" : "ServiceSpreadingPriority", "weight" : 1},
+      {"name" : "EqualPriority", "weight" : 1}
+      ],
+    "extenders": [
+      {
+        "urlPrefix": "http://127.0.0.1:12345/v1",
+        "filterVerb": "scheduler",
+        "apiVersion": "v1beta1",
+        "bindVerb": "bind",
+        "weight": 5,
+        "nodeCacheCapable": false,
+        "enableHttps": false,
+        "httpTimeout": 300000000000
+      }
+    ],
+    "hardPodAffinitySymmetricWeight" : 10
+    }
