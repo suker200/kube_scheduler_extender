@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+  annotations:
+    prometheus.io/probe: 'httpcheck'
+    prometheus.io/path: '/ping'
+  namespace: {{ .Values.brand }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: {{ .Values.service.internalPort }}
+  selector:
+    app: {{ .Chart.Name }}

@@ -17,6 +17,7 @@ func (nodeResource *NodeResource) NodeRequest(d clientset.Interface, podName, po
 	// pod, err := d.Core().Pods(podNamespace).Get(podName, metav1.GetOptions{})
 	pod, err := d.Core().Pods(podNamespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
+		fmt.Println(err.Error())
 		nodeResource.Schedule = false
 		nodeResource.FailedMessage = err.Error()
 		return
@@ -26,6 +27,7 @@ func (nodeResource *NodeResource) NodeRequest(d clientset.Interface, podName, po
 	podReqs, _, err := getPodsTotalRequestsAndLimits(&podList)
 
 	if err != nil {
+		fmt.Println(err.Error())
 		nodeResource.Schedule = false
 		nodeResource.FailedMessage = err.Error()
 		return
@@ -73,6 +75,7 @@ func (nodeResource *NodeResource) getNodeResource(d clientset.Interface, namespa
 	}
 	fmt.Println("Field selector is " + fieldSelector.String())
 	podList, err = d.Core().Pods(namespace).List(metav1.ListOptions{FieldSelector: fieldSelector.String()})
+
 	if err != nil {
 		fmt.Print(err.Error())
 		nodeResource.Schedule = false

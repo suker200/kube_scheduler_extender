@@ -1,0 +1,147 @@
+{{- $project_name := .Chart.Name -}}
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+    brand: {{ .Values.brand }}
+    version: {{ .Values.imageVersion }}
+    chartVersion: {{ .Chart.Version }}
+    tier: {{ .Values.tier | default "backend" }}
+    imageVersion: {{ .Values.imageVersion }}
+  namespace: {{ .Values.brand }}
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1 # For make sure always has at least n pod (Note : 2 for prod)
+      maxSurge: 1
+  replicas: {{ .Values.replicaCount | default 1 }}
+  minReadySeconds: {{ .Values.minReadySeconds | default 5 }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 3 }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        brand: {{ .Values.brand }}
+    spec:
+      serviceAccountName: {{ .Chart.Name }}-sa
+      affinity:
+        podAntiAffinity:  
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ .Chart.Name }}
+              - key: brand
+                operator: In
+                values:
+                - {{ .Values.brand }}
+            topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ .Chart.Name }}
+                - key: brand
+                  operator: In
+                  values:
+                  - {{ .Values.brand }}
+              topologyKey: failure-domain.beta.kubernetes.io/zone
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: scheduler
+        image: {{ .Values.scheduler_default_image }}
+        command:
+          - /bin/sh
+          - -c
+          - /usr/local/bin/kube-scheduler --leader-elect=false --scheduler-name={{ .Values.scheduler.scheduler_name }} --policy-config-file=/data/scheduler_policy.json  --lock-object-namespace={{ .Values.scheduler.lock_object_namespace }} --lock-object-name=lock-object-name --v=2 2>&1 
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10251
+          initialDelaySeconds: {{ .Values.initialDelaySeconds }}
+          timeoutSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10251
+          initialDelaySeconds: {{ .Values.initialDelaySeconds }}
+          timeoutSeconds: 15
+        resources:
+{{ toYaml .Values.resources.scheduler | indent 12 }}
+        volumeMounts:
+          - name: scheduler-policy
+            mountPath: /data/
+
+      - name: extender
+        image: {{ .Values.scheduler_extender_image }}
+        imagePullPolicy: Always
+        command:
+          - /bin/sh
+          - -c
+          - /kube_scheduler_extender --role_check={{ .Values.scheduler.args.role_check }} --test_mode={{ .Values.scheduler.args.test_mode }} --cpu_threshold={{ .Values.scheduler.args.threshold.cpu }} --memory_threshold={{ .Values.scheduler.args.threshold.memory }} --load_threshold={{ .Values.scheduler.args.threshold.load }} --prometheus_server={{ .Values.scheduler.args.config.prometheus_server }} --cpu_idle_threshold={{ .Values.scheduler.args.threshold.cpu_idle}}
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
+        resources:
+{{ toYaml .Values.resources.extender | indent 12 }}
+
+      - name: prometheus
+        image: {{ .Values.prometheus_server_image }}
+        args:
+{{- range .Values.prometheus.args }}
+          - {{ . }}
+{{- end }}
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 9090
+          initialDelaySeconds: 60
+          timeoutSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: 9090
+          initialDelaySeconds: 60
+          timeoutSeconds: 15
+        resources:
+{{ toYaml .Values.resources.prometheus | indent 12 }}
+        volumeMounts:
+          - name: config
+            mountPath: /prometheus.yml
+            subPath: prometheus.yml
+          - name: volshare
+            mountPath: /data
+
+      volumes:
+      - name: scheduler-policy
+        configMap:
+          name: {{ .Chart.Name }}-scheduler-policy
+      - name: volshare
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: {{ .Chart.Name }}-prometheus-config
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}

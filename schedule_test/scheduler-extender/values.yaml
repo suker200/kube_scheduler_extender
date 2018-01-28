@@ -6,48 +6,58 @@ aws_account_id: "xxx"
 replicaCount: 1
 imageVersion: scheduler_extender
 
-scheduler_default_image: gcr.io/google_containers/kube-scheduler:v1.7.3
-scheduler_extender_image: suker200/kube_scheduler_extender
+prometheus_server_image: quay.io/prometheus/prometheus:v2.1.0
+scheduler_default_image: gcr.io/google_containers/kube-scheduler:v1.8.7
+scheduler_extender_image: suker200/kube_scheduler_extender:v3 #suker200/kube_scheduler_extender
 tier: "control-plane"
-
-scheduler_name: custom-scheduler-test
-
-lock_object_namespace: custom-scheduler-lockobject-test
 
 service:
   internalPort: 12345
 
 resources:
-  requests:
-    cpu: 100m
-    memory: 200Mi
-  limits:
-    cpu: 100m
-    memory: 200Mi
+  scheduler:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 100m
+      memory: 200Mi
+  extender:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 100m
+      memory: 200Mi
+  prometheus:
+    requests:
+      cpu: 100m
+      memory: 500Mi
+    limits:
+      cpu: 100m
+      memory: 500Mi
 
 initialDelaySeconds: 72
 minReadySeconds: 5
 
-healthcheck:
-  method: tcp
-
 scheduler:
-  test_mode: "true"
-  threshold:
-    cpu: 76
-    memory: 76
-    load: 2
-    cpu_idle: 70
-  config:
-    prometheus_server: "http://prometheus-prometheus-server.devops.svc.cluster.local"
+  args:
+    test_mode: "false"
+    role_check: "false"
+    threshold:
+      cpu: 76
+      memory: 76
+      load: 2
+      cpu_idle: 70
+    config:
+      prometheus_server: "http://127.0.0.1:9090"
 
-ingress:
-  enabled: false
-  class: "internal-facing"
-  hosts:
-    - suker200.com
+  scheduler_name: custom-scheduler-test
 
-scheduler_policy: |-
+  lock_object_namespace: custom-scheduler-lockobject-test
+
+  # "bindVerb": "bind"  --> temporary disabled 
+  scheduler_policy: |-
     {
     "kind" : "Policy",
     "apiVersion" : "v1",
@@ -58,7 +68,8 @@ scheduler_policy: |-
       {"name" : "NoVolumeZoneConflict"},
       {"name" : "MatchNodeSelector"},
       {"name" : "HostName"},
-      {"name" : "MatchInterPodAffinity"}
+      {"name" : "MatchInterPodAffinity"},
+      {"name" : "PodToleratesNodeTaints"}
       ],
     "priorities" : [
       {"name" : "LeastRequestedPriority", "weight" : 1},
@@ -71,7 +82,6 @@ scheduler_policy: |-
         "urlPrefix": "http://127.0.0.1:12345/v1",
         "filterVerb": "scheduler",
         "apiVersion": "v1beta1",
-        "bindVerb": "bind",
         "weight": 5,
         "nodeCacheCapable": false,
         "enableHttps": false,
@@ -80,3 +90,31 @@ scheduler_policy: |-
     ],
     "hardPodAffinitySymmetricWeight" : 10
     }
+
+prometheus:
+  args:
+    - --config.file=/prometheus.yml
+    - --web.enable-lifecycle
+    - --web.enable-admin-api
+    - --storage.tsdb.path="/data/"
+    - --storage.tsdb.retention=30m
+
+  prometheus_config: |-
+    global:
+      scrape_interval: 15s 
+    scrape_configs:
+      - job_name: 'kubernetes-nodes'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - source_labels: [__address__]
+            action: replace
+            target_label: __metrics_path__
+            replacement: /metrics/cadvisor

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-scheduler-policy
+  namespace: kube-system
+data:
+  scheduler_policy.json: |-
+{{ .Values.scheduler.scheduler_policy | indent 3 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-prometheus-config
+  namespace: kube-system
+data:
+  prometheus.yml: |-
+{{ .Values.prometheus.prometheus_config | indent 3 }}

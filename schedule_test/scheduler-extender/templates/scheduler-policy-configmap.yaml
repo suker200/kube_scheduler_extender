@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Chart.Name }}-scheduler-policy
-  namespace: kube-system
-data:
-  scheduler_policy.json: |-
-{{ .Values.scheduler_policy | indent 3 }}

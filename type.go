@@ -3,6 +3,7 @@ package main
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	k8sapi "k8s.io/kubernetes/pkg/api"
+	k8sapiV1 "k8s.io/api/core/v1"
 )
 
 type NodeResource struct {
@@ -35,4 +36,10 @@ type Resp_PrometheusMetrics struct {
 			Value []interface{} `json:"value"`
 		} `json:"result"`
 	} `json:"data"`
+}
+
+type ScaleCA struct {
+	Pod k8sapiV1.Pod `json:"pod"`
+	// Node k8sapiV1.Node `json:"node"`
+	Node string `json:"node"`
 }

@@ -1,18 +1,24 @@
 package: kube_scheduler_extender 
 import:
 - package: k8s.io/client-go
-  version: release-4.0
+  version: release-5.0
 - package: github.com/spf13/cobra
   verison: master
 - package: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
-- package: k8s.io/api/admissionregistration/v1alpha1
-  version: master
+- package: k8s.io/api
+  version: release-1.8
+# - package: k8s.io/api/admissionregistration/v1alpha1
+#   version: master
 - package: k8s.io/kubernetes
-  version: release-1.7
-- package: k8s.io/api/apps
-  version: master
+  version: release-1.8
+# - package: k8s.io/api/apps
+#   version: 389dfa299845bcf399c16af89987e8775718ea48 #release-1.8 #389dfa299845bcf399c16af89987e8775718ea48
 - package: cloud.google.com/go/compute/metadata
   version: master
 - package: github.com/Azure/go-autorest/autorest
   version: master
+- package: k8s.io/apimachinery/pkg/openapi
+  version: release-1.8
+- package: k8s.io/apiextensions-apiserver
+  version: release-1.8

@@ -6,6 +6,6 @@ import (
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
 
-func GetPod(d clientset.Interface, podName string) (*k8sapi.Pod, error) {
-	return d.Core().Pods("").Get(podName, v1.GetOptions{})
+func GetPod(d clientset.Interface, podName, podNameSpace string) (*k8sapi.Pod, error) {
+	return d.Core().Pods(podNameSpace).Get(podName, v1.GetOptions{})
 }
