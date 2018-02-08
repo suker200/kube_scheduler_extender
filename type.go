@@ -6,6 +6,20 @@ import (
 	k8sapiV1 "k8s.io/api/core/v1"
 )
 
+type ConfigInfo struct {
+	Threshold	ThreshodInfo `yaml:"threshold_config"`
+	PrometheusServer string `yaml:"prometheus_server"`
+	TestMode bool	`yaml:"test_mode"`
+	CloudProvider string `yaml:"cloud_provider"`
+	Region	string `yaml:"region"`
+	Zones	[]string `yaml:"zones"`
+	RoleCheck bool `yaml:"role_check"`
+	SpotEnable bool `yaml:"spot_enable"`
+	SpotLabel string `yaml:"spot_label"`
+	SpotInfo map[string]SpotConfig `yaml:"spot_config"`
+	SpotDemandBalance	int `yaml:"spotdemandbalance"`
+}
+
 type NodeResource struct {
 	Name          string
 	Schedule      bool
@@ -20,10 +34,10 @@ type NodeResource struct {
 }
 
 type ThreshodInfo struct {
-	Cpu    int64
-	Memory int64
-	Load   float64
-	CpuIdle float64
+	Cpu    int64 `yaml:"cpu"`
+	Memory int64 `yaml:"memory"`
+	Load   float64 `yaml:"load"`
+	CpuIdle float64 `yaml:"cpuidle"`
 }
 
 type Resp_PrometheusMetrics struct {
@@ -42,4 +56,11 @@ type ScaleCA struct {
 	Pod k8sapiV1.Pod `json:"pod"`
 	// Node k8sapiV1.Node `json:"node"`
 	Node string `json:"node"`
+	Labels map[string]string `json:"labels"`
+}
+
+type SpotConfig struct {
+	MaxPrice float64 `yaml:"maxprice"`
+	MaxPriceScaleUP float64 `yaml:"maxpricescaleup"`
+	PriceScaleDOWN float64 `yaml:"pricescaledown"`
 }

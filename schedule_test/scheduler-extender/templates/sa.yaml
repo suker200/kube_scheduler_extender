@@ -17,6 +17,16 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+- nonResourceURLs:
+  - "/metrics"
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
   - events
   verbs:
   - create
@@ -42,6 +52,9 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - nodes/proxy
+  - services
+  - endpoints
   - nodes
   - pods
   verbs:
@@ -98,12 +111,12 @@ rules:
 - apiGroups:
   - ""
   resources:
-    - endpoints
+  - endpoints
   verbs:
-    - delete
-    - get
-    - patch
-    - update
+  - delete
+  - get
+  - patch
+  - update
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1

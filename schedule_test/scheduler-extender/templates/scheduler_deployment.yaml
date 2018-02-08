@@ -91,17 +91,36 @@ spec:
         command:
           - /bin/sh
           - -c
-          - /kube_scheduler_extender --role_check={{ .Values.scheduler.args.role_check }} --test_mode={{ .Values.scheduler.args.test_mode }} --cpu_threshold={{ .Values.scheduler.args.threshold.cpu }} --memory_threshold={{ .Values.scheduler.args.threshold.memory }} --load_threshold={{ .Values.scheduler.args.threshold.load }} --prometheus_server={{ .Values.scheduler.args.config.prometheus_server }} --cpu_idle_threshold={{ .Values.scheduler.args.threshold.cpu_idle}}
+          - tail -f /dev/null
+          # - /kube_scheduler_extender --role_check={{ .Values.scheduler.args.role_check }} --test_mode={{ .Values.scheduler.args.test_mode }} --cpu_threshold={{ .Values.scheduler.args.threshold.cpu }} --memory_threshold={{ .Values.scheduler.args.threshold.memory }} --load_threshold={{ .Values.scheduler.args.threshold.load }} --prometheus_server={{ .Values.scheduler.args.config.prometheus_server }} --cpu_idle_threshold={{ .Values.scheduler.args.threshold.cpu_idle}}
+        # livenessProbe:
+        #   httpGet:
+        #     path: /ping
+        #     port: {{ .Values.service.internalPort }}
+        #   initialDelaySeconds: 15
+        #   timeoutSeconds: 15
+        # readinessProbe:
+        #   httpGet:
+        #     path: /ping
+        #     port: {{ .Values.service.internalPort }}
+        #   initialDelaySeconds: 15
+        #   timeoutSeconds: 15
+        resources:
+{{ toYaml .Values.resources.extender | indent 12 }}
+
+      - name: pushgateway
+        image: {{ .Values.prometheus_pushgateway }}
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
-            path: /ping
-            port: {{ .Values.service.internalPort }}
+            path: /
+            port: 9091
           initialDelaySeconds: 15
           timeoutSeconds: 15
         readinessProbe:
           httpGet:
-            path: /ping
-            port: {{ .Values.service.internalPort }}
+            path: /
+            port: 9091
           initialDelaySeconds: 15
           timeoutSeconds: 15
         resources:

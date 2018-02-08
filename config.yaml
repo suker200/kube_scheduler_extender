@@ -1,0 +1,35 @@
+---
+threshold_config:
+  cpu: 85
+  memory: 85
+  load: 5
+  cpuidle: 70
+
+cloud_provider: aws
+region: us-east-1
+zones:
+  - us-east-1a
+  - us-east-1b
+  - us-east-1c
+  - us-east-1d
+  - us-east-1e
+  - us-east-1f
+prometheus_server: http://127.0.0.1:9090
+test_mode: false
+role_check: true
+spot_enable: true
+spot_label: spot.instance
+spotdemandbalance: 70
+spot_config:
+  m3.medium:
+    maxprice: 0.067
+    maxpricescaleup: 0.057
+    pricescaledown: 0.062
+  m4.2xlarge:
+    maxprice: 0.4
+    maxpricescaleup: 0.3
+    pricescaledown: 0.35
+  m4.xlarge:
+    maxprice: 0.2
+    maxpricescaleup: 0.12
+    pricescaledown: 0.15

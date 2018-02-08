@@ -22,3 +22,7 @@ import:
   version: release-1.8
 - package: k8s.io/apiextensions-apiserver
   version: release-1.8
+- package: github.com/aws/aws-sdk-go
+  version: 63ce630574a5ec05ecd8e8de5cea16332a5a684d 
+- package: github.com/prometheus/client_golang/prometheus
+  version: master
