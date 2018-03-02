@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func (config ConfigInfo) Loads_metric() map[string]float64 {
+func (config *ConfigInfo) Loads_metric() map[string]float64 {
 	var load_metrics Resp_PrometheusMetrics
 	var cpu_core_metrics Resp_PrometheusMetrics
 	load_metrics = Get_PrometheusMetrics(config.PrometheusServer + "/api/v1/query?query=node_load5{}")

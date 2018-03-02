@@ -16,8 +16,10 @@ type ConfigInfo struct {
 	RoleCheck bool `yaml:"role_check"`
 	SpotEnable bool `yaml:"spot_enable"`
 	SpotLabel string `yaml:"spot_label"`
+	SpotReserveLabel string `yaml:"spot_reserve_label"`
 	SpotInfo map[string]SpotConfig `yaml:"spot_config"`
 	SpotDemandBalance	int `yaml:"spotdemandbalance"`
+	AsgDiscoveryTag []string `yaml:"asg_auto_discovery_tag"`
 }
 
 type NodeResource struct {
@@ -46,6 +48,8 @@ type Resp_PrometheusMetrics struct {
 		Result []struct {
 			Metric struct {
 				Instance string `json:"instance"`
+				InstanceType string `json:"instanceType"`
+				Zone 	string `json:"zone"`
 			} `json:"metric"`
 			Value []interface{} `json:"value"`
 		} `json:"result"`
@@ -63,4 +67,19 @@ type SpotConfig struct {
 	MaxPrice float64 `yaml:"maxprice"`
 	MaxPriceScaleUP float64 `yaml:"maxpricescaleup"`
 	PriceScaleDOWN float64 `yaml:"pricescaledown"`
+}
+
+type SpotStatus struct {
+	Zone string `json:"zone"`
+	InstanceType string `json:"instanceType"`
+	Message string `json:"message"`
+	ID string `json:"id"`
+}
+
+type ASGInfo struct {
+	Name string `json:"name"`
+	MaxSize int64 `json:"maxsize"`
+	MinSize int64 `json:"minsize"`
+	CurrentSize int64 `json:"currentsize"`
+	InstanceIDs []string `json:"instancesid"`
 }

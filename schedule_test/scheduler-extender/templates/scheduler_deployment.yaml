@@ -29,6 +29,8 @@ spec:
       labels:
         app: {{ .Chart.Name }}
         brand: {{ .Values.brand }}
+      annotations:
+        iam.amazonaws.com/role: {{ .Values.iam_role }}
     spec:
       serviceAccountName: {{ .Chart.Name }}-sa
       affinity:
@@ -91,25 +93,28 @@ spec:
         command:
           - /bin/sh
           - -c
-          - tail -f /dev/null
-          # - /kube_scheduler_extender --role_check={{ .Values.scheduler.args.role_check }} --test_mode={{ .Values.scheduler.args.test_mode }} --cpu_threshold={{ .Values.scheduler.args.threshold.cpu }} --memory_threshold={{ .Values.scheduler.args.threshold.memory }} --load_threshold={{ .Values.scheduler.args.threshold.load }} --prometheus_server={{ .Values.scheduler.args.config.prometheus_server }} --cpu_idle_threshold={{ .Values.scheduler.args.threshold.cpu_idle}}
-        # livenessProbe:
-        #   httpGet:
-        #     path: /ping
-        #     port: {{ .Values.service.internalPort }}
-        #   initialDelaySeconds: 15
-        #   timeoutSeconds: 15
-        # readinessProbe:
-        #   httpGet:
-        #     path: /ping
-        #     port: {{ .Values.service.internalPort }}
-        #   initialDelaySeconds: 15
-        #   timeoutSeconds: 15
+          - /kube_scheduler_extender -configfile=/extender.yaml
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
         resources:
 {{ toYaml .Values.resources.extender | indent 12 }}
+        volumeMounts:
+          - name: extender-config
+            mountPath: /extender.yaml
+            subPath: extender.yaml
 
       - name: pushgateway
-        image: {{ .Values.prometheus_pushgateway }}
+        image: prom/pushgateway
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -124,7 +129,7 @@ spec:
           initialDelaySeconds: 15
           timeoutSeconds: 15
         resources:
-{{ toYaml .Values.resources.extender | indent 12 }}
+{{ toYaml .Values.resources.pushgateway | indent 12 }}
 
       - name: prometheus
         image: {{ .Values.prometheus_server_image }}
@@ -147,20 +152,24 @@ spec:
         resources:
 {{ toYaml .Values.resources.prometheus | indent 12 }}
         volumeMounts:
-          - name: config
+          - name: promtheus-config
             mountPath: /prometheus.yml
             subPath: prometheus.yml
           - name: volshare
             mountPath: /data
-
+{{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+{{- end }}
       volumes:
       - name: scheduler-policy
         configMap:
           name: {{ .Chart.Name }}-scheduler-policy
       - name: volshare
         emptyDir: {}
-      - name: config
+      - name: promtheus-config
         configMap:
           name: {{ .Chart.Name }}-prometheus-config
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+      - name: extender-config
+        configMap:
+          name: {{ .Chart.Name }}-extender-config

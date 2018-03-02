@@ -10,7 +10,7 @@ import (
 	// "errors"
 	"io/ioutil"
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	rest "k8s.io/client-go/rest"
+	"k8s.io/client-go/rest"
 	k8sapi "k8s.io/kubernetes/pkg/api"
 	k8sapiV1 "k8s.io/api/core/v1"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
@@ -20,6 +20,8 @@ import (
 	"time"
 	"regexp"
 	"gopkg.in/yaml.v2"
+	"github.com/fsnotify/fsnotify"
+	// "os"
 )
 
 var Client *clientset.Clientset
@@ -86,6 +88,19 @@ func DetectSpotInstance(nodeList []k8sapiV1.Node) []k8sapiV1.Node {
 	} 
 
 	return demandnodes
+}
+
+func CheckNodeLabel(nodeList []k8sapiV1.Node, label string) []k8sapiV1.Node {
+	var nodes = []k8sapiV1.Node{}
+	for _, node := range nodeList {
+		if len(node.ObjectMeta.Labels) != 0 {
+			if _, ok := node.ObjectMeta.Labels[Config.SpotReserveLabel]; ok {
+				nodes = append(nodes, node)
+			}
+		} 
+	}
+
+	return nodes
 }
 
 func MetricChecker(result schedulerapi.ExtenderFilterResult, nResource NodeResource, node k8sapiV1.Node) (schedulerapi.ExtenderFilterResult, error) {
@@ -170,6 +185,12 @@ func SchedulerFunc(c *gin.Context) {
 		}	
 	}
 
+	if Config.SpotReserveLabel != "" {
+		if _, ok := pod.ObjectMeta.Labels[Config.SpotReserveLabel]; ok {
+			nodeList = CheckNodeLabel(nodeList, Config.SpotReserveLabel)
+		}
+	}
+	
 	// If spot enable and spot instance exist, remove all demand instance from list
 	if Config.SpotEnable {
 		result.Nodes.Items = DetectSpotInstance(nodeList)
@@ -207,24 +228,26 @@ func ClusterAutoscaler(c *gin.Context) {
 
 	r, _ := regexp.Compile("template-node-for")
 
-	if ! r.Match([]byte(ca.Node)) {
-		pod, err = GetPod(Client, ca.Pod.ObjectMeta.Name, ca.Pod.ObjectMeta.Namespace)
-		// Case pod deleted before checked or apiserver connect issue --> just return 200
-		if err != nil {
-			fmt.Println(err.Error())
-			r1, _ := regexp.Compile("not found")
-			if r1.Match([]byte(err.Error())) {
-				resp = "true"
-			} else {
-				resp = "false"	
-			}
-			return
+	pod, err = GetPod(Client, ca.Pod.ObjectMeta.Name, ca.Pod.ObjectMeta.Namespace)
+	// Case pod deleted before checked or apiserver connect issue --> just return 200
+	if err != nil {
+		fmt.Println(err.Error())
+		r1, _ := regexp.Compile("not found")
+		if r1.Match([]byte(err.Error())) {
+			resp = "true"
+		} else {
+			resp = "false"	
 		}
-		fmt.Println("====================")
-		fmt.Println(pod.ObjectMeta.Name)
-		fmt.Println(pod.ObjectMeta.Namespace)
-		fmt.Println(ca.Node)
-		fmt.Println("====================")
+		return
+	}
+
+	fmt.Println("====================")
+	fmt.Println(pod.ObjectMeta.Name)
+	fmt.Println(pod.ObjectMeta.Namespace)
+	fmt.Println(ca.Node)
+	fmt.Println("====================")
+
+	if ! r.Match([]byte(ca.Node)) {
 		// if pod's NodeName as the same nodename from request --> return false  else process
 		nResource.NodeRequest(Client, pod.ObjectMeta.Name, pod.ObjectMeta.Namespace, "", ca.Node)
 		
@@ -255,6 +278,7 @@ func ClusterAutoscaler(c *gin.Context) {
 				resp = "false"
 			}
 		}
+
 	} else {
 		// Case template. Checking spot instance for scaling up/down instead return true
 		// use spot instance when cost okie , capacity okie, balance okie
@@ -264,27 +288,35 @@ func ClusterAutoscaler(c *gin.Context) {
 			fmt.Println(ca.Labels)
 			fmt.Println("===== ca labels ====")
 			if Config.SpotEnable {
-				instanceZone := ca.Labels["failure-domain.beta.kubernetes.io/zone"]
-				instanceType := ca.Labels["beta.kubernetes.io/instance-type"]
-				spotPrice := Config.GetSpotPrice(instanceZone, instanceType)
-				if ok := Config.SpotPriceCheckScaleUp(spotPrice, instanceType); ok {
-					fmt.Println("=======================================")
-					fmt.Println(ca.Labels)
-					fmt.Println(instanceZone)
-					fmt.Println(instanceType)
-					fmt.Println("Allow ASG Spot Instance scaleup : ", ca.Node)
-					fmt.Println("=======================================")
-					resp = "true"
+				var instanceZone string
+				var instanceType string
+				if Config.CloudProvider == "aws" {
+					instanceZone = ca.Labels["failure-domain.beta.kubernetes.io/zone"]
+					instanceType = ca.Labels["beta.kubernetes.io/instance-type"]
 				} else {
-					fmt.Println("=======================================")
-					fmt.Println(ca.Labels)
-					fmt.Println(instanceZone)
-					fmt.Println(instanceType)
-					fmt.Println("Do not allow ASG Spot Instance scaleup : ", ca.Node)
-					fmt.Println("=======================================")
+					instanceZone = ca.Labels["failure-domain.beta.kubernetes.io/zone"]
+					instanceType = ca.Labels["beta.kubernetes.io/instance-type"]
+				}
+
+				spotPrice := Config.GetSpotPrice(instanceZone, instanceType)
+				if ok := Config.SpotPriceCheckScaleUp(spotPrice, instanceType); ! ok {
 					resp = "false"
 				}
-			}			
+			}
+		}
+	}
+
+	if Config.SpotReserveLabel != "" {
+		if _, ok := pod.ObjectMeta.Labels[Config.SpotReserveLabel]; ok {
+			// pod scheduled to SpotReserve, if node is not SpotReserve, do not allow to schedule
+			if _, ok := ca.Labels[Config.SpotReserveLabel]; ! ok {
+				resp = "false"
+			}
+		} else {
+			// pod not scheduled to SpotReserve, if node is SpotReserve, do not allow to schedule
+			if _, ok := ca.Labels[Config.SpotReserveLabel]; ok {
+				resp = "false"
+			}				
 		}
 	}
 
@@ -303,6 +335,36 @@ func (config *ConfigInfo) ConfigParse(filepath string) error {
 
 	err = yaml.Unmarshal(yamlFile, config)
 	return err
+}
+
+func (config *ConfigInfo) ConfigReload(configFile string) {
+	watcher, _ := fsnotify.NewWatcher()
+
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case event := <-watcher.Events:
+				fmt.Println("ConfigFile change:", event)
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					var configTmp *ConfigInfo
+					if err := configTmp.ConfigParse(configFile); err == nil {
+						config.ConfigParse(configFile)
+					}
+				}
+			case err := <-watcher.Errors:
+				fmt.Println(err.Error())
+			}
+		}
+	}()
+
+	err := watcher.Add(configFile)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	<-done
 }
 
 func main() {
@@ -336,9 +398,10 @@ func main() {
 		fmt.Println(Config)
 	}
 
-	// Config.SpotPrice("us-east-1a", "m3.medium")
+	go Config.ConfigReload(*configfile)
 
-	go Config.SpotPricing()
+	go Config.AWSSpotPricing()
+	go Config.AWSasgAutoDiscovery()
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -355,6 +418,7 @@ func main() {
 	r := gin.Default()
 	r.POST("v1/scheduler", SchedulerFunc)
 	// r.POST("v1/bind", FinalScheduleResult)
+	// r.POST("v1/spotupdate", SpotUpdateFunc)
 	r.POST("v1/ca", ClusterAutoscaler)
 	r.GET("/ping", Ping)
 

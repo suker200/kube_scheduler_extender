@@ -17,8 +17,12 @@ zones:
 prometheus_server: http://127.0.0.1:9090
 test_mode: false
 role_check: true
+asg_auto_discovery_tag:
+  - k8s.io/cluster-autoscaler/enabled
+  - kubernetes.io/cluster/k8s.stg.suker200.com
 spot_enable: true
 spot_label: spot.instance
+spot_reserve_label: spot.instance.reserve
 spotdemandbalance: 70
 spot_config:
   m3.medium:
@@ -33,3 +37,7 @@ spot_config:
     maxprice: 0.2
     maxpricescaleup: 0.12
     pricescaledown: 0.15
+  r4.xlarge:
+    maxprice: 0.53
+    maxpricescaleup: 0.4
+    pricescaledown: 0.45

@@ -17,7 +17,7 @@ import:
 - package: cloud.google.com/go/compute/metadata
   version: master
 - package: github.com/Azure/go-autorest/autorest
-  version: master
+  version: 58f6f26e200fa5dfb40c9cd1c83f3e2c860d779d
 - package: k8s.io/apimachinery/pkg/openapi
   version: release-1.8
 - package: k8s.io/apiextensions-apiserver
@@ -26,3 +26,17 @@ import:
   version: 63ce630574a5ec05ecd8e8de5cea16332a5a684d 
 - package: github.com/prometheus/client_golang/prometheus
   version: master
+- package: github.com/jinzhu/copier
+  version: master
+- package: "k8s.io/apimachinery/pkg/runtime"
+  version: release-1.8
+- package: "k8s.io/apimachinery/pkg/types"
+  version: release-1.8
+- package: "k8s.io/apimachinery/pkg/util/strategicpatch"
+  version: release-1.8
+- package: "k8s.io/apimachinery/pkg/util/validation"
+  version: release-1.8
+- package: "github.com/MakeNowJust/heredoc"
+  version: 1d91351acdc1cb2f2c995864674b754134b86ca7
+- package: "k8s.io/apiserver/pkg/util/feature"
+  version: release-1.8

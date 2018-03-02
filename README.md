@@ -56,7 +56,7 @@ CGO_ENABLED=0 env GOOS=linux go build
 # Note: 
 - If you are using cluster-autoscaler
 	+ cluster autoscaler <= 0.6.x enable below option, to make sure cluster-autoscaler respect your custom-scheduler request, because the cluster-autoscaler have their node check before scaling node. (--verify-unschedulable-pods=false)
-	+ cluster autoscaler > 0.6.x, please us my custom cluster-autoscaler which support "--custom-scheduler" for example
+	+ cluster autoscaler > 0.6.x, please use my custom cluster-autoscaler which support "--custom-scheduler" for example
 ```
 	AWS_REGION=us-east-1 ./cluster-autoscaler --cloud-provider=aws --node-group-auto-discovery=asg:tag=xxx --alsologtostderr --logtostderr --namespace=testing --v=4 --stderrthreshold=info --skip-nodes-with-local-storage=false --custom-scheduler=http://127.0.0.1:12345/v1/ca 
 ```
